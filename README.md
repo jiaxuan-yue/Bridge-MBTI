@@ -1,12 +1,36 @@
-# Expo App + Express.js
+# 心语翻译官
+每个人的人格不同，沟通方式都要调整。如果硬编码 16×16 的翻译模板，256 种组合无法维护。Bridge-MBTI 采用 Runtime 动态装配：每轮翻译时，根据"我是谁"+"对方是谁"+"翻译方向"，实时注入双方人格参数（编码风格/解码偏好/障碍预警），原子化隔离、无状态执行。这样无论用户选择哪种人格组合，系统都能即时装配出正确的翻译策略，无需预定义 256 套模板。
 
-## 目录结构规范（严格遵循）
+Runtime 隔离设计（项目核心亮点）：
+// 每轮翻译独立构建系统提示词 const systemPrompt 
 
-当前仓库是一个 monorepo（基于 pnpm 的 workspace）
+# System Section - 受控 Runtime 环境
+- 当前是受控的单轮翻译环境，不存在多轮对话上下文
+- 每次翻译都是全新的原子任务，完全隔离，不受过往历史污染
+- 所有决策仅基于当前输入和以下动态装配的人格参数
 
-- Expo 代码在 client 目录，Express.js 代码在 server 目录
-- 本模板默认无 Tab Bar，可按需改造
+# Context & Assembly - 运行时装配区
+- 发言者人格：${speakerMbti}
+- 发言者编码风格：${speakerInfo.encoding_style}
+- 接收者人格：${listenerMbti}
+- 接收者解码偏好：${listenerInfo.decoding_preference}
+- 潜在冲突预警：${listenerInfo.barrier_tips}
+`;
 
+// 无状态消息构建 - 不追加历史
+const messages = [
+  { role: "system", content: systemPrompt },
+  { role: "user", content: inputText }  // 仅当前输入，无历史上下文
+];
+
+亮点说明：
+
+原子化隔离：每轮翻译独立构建 systemPrompt，动态注入当前人格参数，无历史依赖
+无状态设计：不维护 sessionId/conversationId，消息数组仅含当前轮次 system+user
+运行时装配：16 型人格特征库作为"人格组件"，翻译时按需装配发言者/接收者双方参数
+可预测输出：消除历史污染后，相同输入永远产生相同输出，便于调试和测试
+
+```
 ├── client/                     # React Native 前端代码
 │   ├── app/                    # Expo Router 路由目录（仅路由配置）
 │   │   ├── _layout.tsx         # 根布局文件（必需，务必阅读）
@@ -28,7 +52,7 @@
 ├── package.json
 ├── .cozeproj                   # 预置脚手架脚本（禁止修改）
 └── .coze                       # 配置文件（禁止修改）
-
+```
 ## 样式方案
 
 基于 tailwindcss 进行样式开发（底层基于 Uniwind）
